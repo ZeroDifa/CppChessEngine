@@ -1,0 +1,39 @@
+body {
+	background-color: #222
+}
+.main {
+	display: flex;
+	justify-content: space-evenly;
+}
+#canvas {
+	background-image: url(img/desk.png);
+	background-size: cover;
+	border-color: #8a8a8a;
+	display: block;
+}
+#AdminInfo {
+    color: navajowhite;
+    background-color: transparent;
+    /* position: absolute; */
+    margin: 10px;
+	font-size: large;
+	width: 200px; /* Ширина div */
+	max-height: 600px; /* Высота div */
+	overflow: auto; /* Включаем прокрутку */
+	border: 1px solid #ccc; /* Граница для наглядности */
+	padding: 10px; /* Отступ внутри div */
+}
+.button {
+	text-align: center;
+	padding: 10px;
+}
+input {
+	width: 15px;
+}
+select {
+	font-size: 0.9rem;
+	padding: 2px 5px;
+}
+#actions {
+	/*display: flex;*/
+}

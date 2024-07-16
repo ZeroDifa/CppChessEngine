@@ -50,6 +50,8 @@ app.get('/command', (req, res) => {
         });
 });
 
+
+
 //stdin commander
 process.stdin.on('data', (data) => {
     calculate(data.toString().trim()).then((result) => {})

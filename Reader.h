@@ -2,17 +2,17 @@
 
 class Reader {
 private:
-    uint8_t* buffer;
+    int* buffer;
     size_t position;
 
 public:
-    Reader(uint8_t* buffer)
+    Reader(int* buffer)
         : buffer(buffer), position(0) {}
 
-    uint8_t readUint8() {
+    int readUint8() {
         int index = position;
         position += 1;
-        uint8_t value = buffer[index];
+        int value = buffer[index];
         return buffer[index];
     }
 

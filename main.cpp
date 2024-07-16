@@ -10,15 +10,14 @@
 using namespace std;
 
 int positionsCount = 0;
-std::chrono::duration<double, std::milli> total_duration(0);
 
-double minmax(int depth, ChessDesk& chessDesk, double alpha, double beta, uint8_t color, bool prolongation = false) {
+double minmax(int depth, ChessDesk& chessDesk, double alpha, double beta, int color, bool prolongation = false) {
     positionsCount++;
     if ((depth < 0 && !prolongation) || depth < MAX_DEPTH*-1) {
         return chessDesk.status();
     }
 
-// auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
 
     vector<Move> available_moves = chessDesk.getAllMoves(color);
     Move bestMoveFound;
@@ -32,9 +31,9 @@ double minmax(int depth, ChessDesk& chessDesk, double alpha, double beta, uint8_
         
 
     }
-// auto end = std::chrono::high_resolution_clock::now();
-// std::chrono::duration<double, std::milli> duration = end - start;
-// total_duration += duration;
+            //             auto end = std::chrono::high_resolution_clock::now();
+            // std::chrono::duration<double, std::milli> duration = end - start;
+            // total_duration += duration;
     if (color == WHITE) {
         sort(moves.begin(), moves.end(), [](const MoveForMinmax& a, const MoveForMinmax& b) {
             return a.status > b.status;
@@ -78,7 +77,7 @@ void threadFunction ()
 {
 
 }
-Move minmaxMain(ChessDesk& chessDesk, uint8_t color, int depth) {
+Move minmaxMain(ChessDesk& chessDesk, int color, int depth) {
     vector<Move> allMoves = chessDesk.getAllMoves(color);
 
     double bestMove = color == WHITE ? INT_MIN : INT_MAX;
@@ -86,10 +85,12 @@ Move minmaxMain(ChessDesk& chessDesk, uint8_t color, int depth) {
     Move bestMoveFound;
 
     vector<MoveForMinmax> moves(allMoves.size());
+    size_t i = 0;
     for (auto& move : allMoves) {
         ChessDesk tempChessDesk = ChessDesk(chessDesk);
         tempChessDesk.move(move.from, move.to);
-        moves.push_back({move, tempChessDesk.status(), tempChessDesk});
+        moves[i] = {move, tempChessDesk.status(), tempChessDesk};
+        i++;
     }
     
     if (color == WHITE) {
@@ -107,18 +108,19 @@ Move minmaxMain(ChessDesk& chessDesk, uint8_t color, int depth) {
     std::vector<std::thread> threads;
     
     for (MoveForMinmax& move : moves) {
-        // threads.emplace_back([&]() {
+        threads.emplace_back([&]() {
             double value = minmax(depth, move.desk, -10000, 10000, color == WHITE ? BLACK : WHITE);
             if ((color == WHITE && value >= bestMove) || (color == BLACK && value <= bestMove)) {
                 bestMove = value;
                 bestMoveFound = move.move;
             }
-        // });
+            // cout << "mived" << std::endl;
+        });
     }
 
-    // for (auto& thread : threads) {
-        // thread.join();
-    // }
+    for (auto& thread : threads) {
+        thread.join();
+    }
 
     return bestMoveFound;
 }
@@ -135,7 +137,10 @@ int main(int argc, char* argv[]) {
     // for (auto& thread : threads) {
     //     thread.join();
     // }
-    ChessDesk mainChessDesk = ChessDesk();
+    for (int i = 0; i < 64; ++i) {
+        cout << INITIAL_SETUP[i] << std::endl;
+    }
+    ChessDesk mainChessDesk = ChessDesk(INITIAL_SETUP, WHITE);
     string input;
     while (true) {
         std::getline(std::cin, input); // Считать данные из stdin
@@ -147,9 +152,9 @@ int main(int argc, char* argv[]) {
         } else if (command == "get-allow-moves") {
             ChessDesk chessDesk = ChessDesk(iss);
             iss >> buffer;
-            vector<uint8_t> moves = chessDesk.getAllowCages(atoi(buffer.c_str()));
+            vector<int> moves = chessDesk.getAllowCages(atoi(buffer.c_str()));
             for (int i = 0; i < moves.size(); ++i) {
-                std::cout << static_cast<int>(moves[i]) << " ";
+                std::cout << moves[i] << " ";
             }
             std::cout << std::endl;
         } else if (command == "print") {
@@ -171,22 +176,38 @@ int main(int argc, char* argv[]) {
         } else if (command == "do") {
             positionsCount = 0;
             auto start_time = std::chrono::steady_clock::now();
-            Move bestMove = minmaxMain(mainChessDesk, mainChessDesk.stepColor, 2);
+            string depth, prolongation;
+            iss >> depth >> prolongation;
+            MAX_DEPTH = atoi(prolongation.c_str());
+            Move bestMove = minmaxMain(mainChessDesk, mainChessDesk.stepColor, atoi(depth.c_str()));
             auto end_time = std::chrono::steady_clock::now();
 
             mainChessDesk.move(bestMove.from, bestMove.to);
-            // cout << mainChessDesk.toJson();
 
             auto elapsed_ns = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-            cout << "Time: " << elapsed_ns.count() / 1000. << endl;
-            cout << "Pos cnt:" << positionsCount << endl;
-            cout << "Total time function: " << total_duration.count() / 1000 << endl;
-            cout << "Speed: " << (double)positionsCount / (elapsed_ns.count() / 1000.) << "/s" << endl;
-            mainChessDesk.printBoard();
-            cout << mainChessDesk.toJson();
+            // cout << "Time: " << elapsed_ns.count() / 1000. << endl;
+            // cout << "Pos cnt:" << positionsCount << endl;
+            // cout << "Total time function: " << total_duration.count() / 1000 << endl;
+            // cout << "Speed: " << (double)positionsCount / (elapsed_ns.count() / 1000.) << "/s" << endl;
+            
+            string result = "{\"desk\":[";
+            for (int i = 0; i < 64; i++)
+            {
+                result += to_string((mainChessDesk.desk[i]));
+                if (i!= 63)
+                    result += ",";
+            }
+            result += "],\"stepColor\": ";
+            result += to_string(mainChessDesk.stepColor);
+            result += ", \"time\": ";
+            result += to_string(elapsed_ns.count() / 1000.);
+            result += ", \"positionsCount\": ";
+            result += to_string(positionsCount);
+            result += "}";
+            cout << result;
             
         } else if (command == "piece-p") {
-            // const unordered_map<uint8_t, vector<uint8_t>>& piecePositions = mainChessDesk.piecePositions;
+            // const unordered_map<int, vector<int>>& piecePositions = mainChessDesk.piecePositions;
             // for (auto& piece : piecePositions) {
             //     cout << SYMBOLS.at(static_cast<int>(piece.first)) << ": ";
             //     for (auto& position : piece.second) {

@@ -11,7 +11,6 @@ window.onresize = (e) => {
     px = a / 8;
     canvas.width = a;
     canvas.height = a;
-    render(MainDesk)
 }
 
 // fetch to localhost
@@ -54,6 +53,7 @@ function render(ds) {
         }
     }
 
+
     ds.draw()
     for (let arc of GreenArcsArray) {
         let y = Math.floor(arc / 8) * px, x = arc%8 * px;
@@ -86,11 +86,11 @@ let PeiceOnFocus = -1, GreenArcsArray = [];
 let mousedown = async function (event) {
     let positionFrom = PeiceOnFocus = getPosition(event.offsetX, event.offsetY) ;
     PeiceOnFocus = MainDesk.getPiece(PeiceOnFocus);
-    // GreenArcsArray = MainDesk.get_all_moves(MainDesk.stepColor)[getPosition(event.offsetX, event.offsetY)] ?? [];
-    GreenArcsArray = await MainDesk.fetchGetAllMoves(PeiceOnFocus.position);
+    GreenArcsArray = MainDesk.get_all_moves(MainDesk.stepColor)[getPosition(event.offsetX, event.offsetY)] ?? [];
+    // GreenArcsArray = await MainDesk.fetchGetAllMoves(PeiceOnFocus.position);
     console.log(GreenArcsArray)
     console.log(getPosition(event.offsetX, event.offsetY), PeiceOnFocus, GreenArcsArray, event.offsetX, event.offsetY)
-    render(MainDesk)
+
     canvas.onmousedown = (event2) => {
         if (!GreenArcsArray.includes(getPosition(event2.offsetX, event2.offsetY))) {
             GreenArcsArray = []
@@ -101,11 +101,11 @@ let mousedown = async function (event) {
         MainDesk.fetchMove(positionFrom, getPosition(event2.offsetX, event2.offsetY), false, true)
         GreenArcsArray = []
         PeiceOnFocus = -1;
-        render(MainDesk);
+
 
         GreenArcsArray = []
         // makeTurn(MainDesk, MainDesk.stepColor, DEPTH);
-        render(MainDesk);
+
         canvas.onmousedown = mousedown
     }
 }
@@ -222,28 +222,30 @@ let minimaxMain = async function(game, color, depth) {
 };
 let timeToFunc = 0;
 async function makeTurn(desk, color, depth, cycle = false) {
+    console.log('Depth', depth, 'Max Depth', MAX_DEPTH)
     let t = performance.now();
     let bestMove = await minimaxMain(desk, color, depth);
     desk.move(bestMove[0], bestMove[1])
     let time = ((performance.now()-t)/1000).toFixed(3);
-    document.getElementById("AdminInfo").innerHTML = `
-        <br>Speed: ${(positionCount/time).toFixed(0)}/s
-        <br>Total ${positionCount} (${time} с)
-        <br>Оценка доски: ${MainDesk.status} ${AlreadySolvedCount}
-        <br>Time ${(timeToFunc/1000).toFixed(4)}
-        <br>------------------
-    ` + document.getElementById("AdminInfo").innerHTML;
+    writeToLog(time, positionCount)
     timeToFunc = 0
     positionCount = 0;
     i_want_pos = null;
     AlreadySolvedCount = 0;
-    render(MainDesk)
+
     // if (cycle) makeTurn(MainDesk, MainDesk.stepColor, depth, cycle)
 }
-
+function writeToLog(time, positions)
+{
+    document.getElementById("AdminInfo").innerHTML = `
+        <br>Speed: ${(positions/time).toFixed(0)}/s
+        <br>Total ${positions} (${time} с)
+        <br>------------------
+    ` + document.getElementById("AdminInfo").innerHTML;
+}
 setInterval(() => {
     render(MainDesk)
-}, 200)
+}, 1000/60)
 // OTHER
 function rnd(arr) {
     arr[0] = Math.ceil(arr[0]);

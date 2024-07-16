@@ -236,75 +236,49 @@ class Desk {
         }
     }
     getRookMoves(row, col, color, array) {
-        let cur_p, index;
-        for (let i = 1; i < 8; i++) {
-            index = this.getIndex(row, col + i)
-            if (index === -1) break
-            cur_p = this.array[index];
-            if (cur_p.type !== EMPTY && cur_p.color === color) break
-            array.push(index)
-            if (cur_p.type !== EMPTY && cur_p.color !== color) break
-        }
-        for (let i = 1; i < 8; i++) {
-            index = this.getIndex(row, col - i)
-            if (index === -1) break
-            cur_p = this.array[index];
-            if (cur_p.type !== EMPTY && cur_p.color === color) break
-            array.push(index)
-            if (cur_p.type !== EMPTY && cur_p.color !== color) break
-        }
-        for (let i = 1; i < 8; i++) {
-            index = this.getIndex(row - i, col)
-            if (index === -1) break
-            cur_p = this.array[index];
-            if (cur_p.type !== EMPTY && cur_p.color === color) break
-            array.push(index)
-            if (cur_p.type !== EMPTY && cur_p.color !== color) break
-        }
-        for (let i = 1; i < 8; i++) {
-            index = this.getIndex(row + i, col)
-            if (index === -1) break
-            cur_p = this.array[index];
-            if (cur_p.type !== EMPTY && cur_p.color === color) break
-            array.push(index)
-            if (cur_p.type !== EMPTY && cur_p.color !== color) break
-        }
+        const directions = [
+            { dr: 0, dc: 1 }, 
+            { dr: 0, dc: -1 },
+            { dr: -1, dc: 0 },
+            { dr: 1, dc: 0 }  
+        ];
+    
+        directions.forEach(({ dr, dc }) => {
+            for (let i = 1; i < 8; i++) {
+                const index = this.getIndex(row + i * dr, col + i * dc);
+                if (index === -1) break;
+                const cur_p = this.array[index];
+                if (cur_p.type !== EMPTY) {
+                    if (cur_p.color === color) break;
+                    array.push(index);
+                    break;
+                }
+                array.push(index);
+            }
+        });
     }
     getBishopMoves(row, col, color, array)
     {
-        let cur_p, index;
-        for (let i = 1; i < 8; i++) {
-            index = this.getIndex(row + i, col + i)
-            if (index === -1) break
-            cur_p = this.array[index];
-            if (cur_p.type !== EMPTY && cur_p.color === color) break
-            array.push(index)
-            if (cur_p.type !== EMPTY && cur_p.color !== color) break
-        }
-        for (let i = 1; i < 8; i++) {
-            index = this.getIndex(row + i, col - i)
-            if (index === -1) break
-            cur_p = this.array[index];
-            if (cur_p.type !== EMPTY && cur_p.color === color) break
-            array.push(index)
-            if (cur_p.type !== EMPTY && cur_p.color !== color) break
-        }
-        for (let i = 1; i < 8; i++) {
-            index = this.getIndex(row - i, col + i)
-            if (index === -1) break
-            cur_p = this.array[index];
-            if (cur_p.type !== EMPTY && cur_p.color === color) break
-            array.push(index)
-            if (cur_p.type !== EMPTY && cur_p.color !== color) break
-        }
-        for (let i = 1; i < 8; i++) {
-            index = this.getIndex(row - i, col - i)
-            if (index === -1) break
-            cur_p = this.array[index];
-            if (cur_p.type !== EMPTY && cur_p.color === color) break
-            array.push(index)
-            if (cur_p.type !== EMPTY && cur_p.color !== color) break
-        }
+        const directions = [
+            { dr: 1, dc: 1 },
+            { dr: 1, dc: -1 },
+            { dr: -1, dc: 1 },
+            { dr: -1, dc: -1 }
+        ];
+        
+        directions.forEach(({ dr, dc }) => {
+            for (let i = 1; i < 8; i++) {
+                const index = this.getIndex(row + i * dr, col + i * dc);
+                if (index === -1) break;
+                const cur_p = this.array[index];
+                if (cur_p.type !== EMPTY) {
+                    if (cur_p.color === color) break;
+                    array.push(index);
+                    break;
+                }
+                array.push(index);
+            }
+        });
     }
     getRowCol(pos)
     {
@@ -495,14 +469,20 @@ class Desk {
     async fetchGetAllMoves(pos)
     {
         let response = await fetch(`http://localhost:8080/command?input=get-allow-moves ${MainDesk.toString()}${this.stepColor} ${pos}`);
-        return (await response.text()).split(' ').map(Number);
+        let text = await response.text();
+        if (text.length === 0)
+            return [];
+        return (text).split(' ').map(Number);
     }
     async fetchMove(from, to) {
         let response = await fetch(`http://localhost:8080/command?input=move ${from} ${to}`);
         this.loadDeskFromJson(await response.json());
     }
     async fetchNextMove() {
-        let response = await fetch('http://localhost:8080/command?input=do');
-        this.loadDeskFromJson(await response.json());
+        let response = await fetch('http://localhost:8080/command?input=do ' + DEPTH + ' ' + MAX_DEPTH);
+        let json = await response.json()
+        this.loadDeskFromJson(json);
+        writeToLog(json.time, json.positionsCount);
+
     }
 }

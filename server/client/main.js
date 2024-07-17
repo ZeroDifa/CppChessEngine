@@ -86,8 +86,8 @@ let PeiceOnFocus = -1, GreenArcsArray = [];
 let mousedown = async function (event) {
     let positionFrom = PeiceOnFocus = getPosition(event.offsetX, event.offsetY) ;
     PeiceOnFocus = MainDesk.getPiece(PeiceOnFocus);
-    GreenArcsArray = MainDesk.get_all_moves(MainDesk.stepColor)[getPosition(event.offsetX, event.offsetY)] ?? [];
-    // GreenArcsArray = await MainDesk.fetchGetAllMoves(PeiceOnFocus.position);
+    // GreenArcsArray = MainDesk.get_all_moves(MainDesk.stepColor)[getPosition(event.offsetX, event.offsetY)] ?? [];
+    GreenArcsArray = await MainDesk.fetchGetAllMoves(PeiceOnFocus.position);
     console.log(GreenArcsArray)
     console.log(getPosition(event.offsetX, event.offsetY), PeiceOnFocus, GreenArcsArray, event.offsetX, event.offsetY)
 
@@ -225,9 +225,9 @@ async function makeTurn(desk, color, depth, cycle = false) {
     console.log('Depth', depth, 'Max Depth', MAX_DEPTH)
     let t = performance.now();
     let bestMove = await minimaxMain(desk, color, depth);
-    desk.move(bestMove[0], bestMove[1])
+    await desk.fetchMove(bestMove[0], bestMove[1])
     let time = ((performance.now()-t)/1000).toFixed(3);
-    writeToLog(time, positionCount)
+    writeToLog(time, positionCount, timeToFunc)
     timeToFunc = 0
     positionCount = 0;
     i_want_pos = null;
@@ -235,11 +235,12 @@ async function makeTurn(desk, color, depth, cycle = false) {
 
     // if (cycle) makeTurn(MainDesk, MainDesk.stepColor, depth, cycle)
 }
-function writeToLog(time, positions)
+function writeToLog(time, positions, func)
 {
     document.getElementById("AdminInfo").innerHTML = `
         <br>Speed: ${(positions/time).toFixed(0)}/s
         <br>Total ${positions} (${time} с)
+        <br>Func time ${func}(${(func/time*100).toFixed(2)}) с
         <br>------------------
     ` + document.getElementById("AdminInfo").innerHTML;
 }

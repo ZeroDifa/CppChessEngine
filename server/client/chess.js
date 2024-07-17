@@ -482,7 +482,7 @@ class Desk {
         let response = await fetch('http://localhost:8080/command?input=do ' + DEPTH + ' ' + MAX_DEPTH);
         let json = await response.json()
         this.loadDeskFromJson(json);
-        writeToLog(json.time, json.positionsCount);
+        writeToLog(json.time, json.positionsCount, json.funcTime);
 
     }
 }

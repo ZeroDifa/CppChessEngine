@@ -10,7 +10,7 @@
 
 using namespace std;
 static std::chrono::duration<double, std::milli> total_duration(0);
-
+static int positionsCount = 0;
 const int EMPTY = 0;
 const int PAWN = 1;
 const int BISHOP = 3;
@@ -45,19 +45,19 @@ const unordered_map<int, string> SYMBOLS = {
     {QUEEN | BLACK, "♛"},
     {KING | BLACK, "♚"}
 };
-// const int INITIAL_SETUP[] = {
-//     ROOK | BLACK | NOT_MOVED, KNIGHT | BLACK | NOT_MOVED, BISHOP | BLACK | NOT_MOVED, QUEEN | BLACK | NOT_MOVED, KING | BLACK | NOT_MOVED, BISHOP | BLACK | NOT_MOVED, KNIGHT | BLACK | NOT_MOVED, ROOK | BLACK | NOT_MOVED,
-//     PAWN | BLACK | NOT_MOVED, PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,  PAWN | BLACK | NOT_MOVED, PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,
-//     EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
-//     EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
-//     EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
-//     EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
-//     PAWN | WHITE | NOT_MOVED, PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,  PAWN | WHITE | NOT_MOVED, PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,
-//     ROOK | WHITE | NOT_MOVED, KNIGHT | WHITE | NOT_MOVED, BISHOP | WHITE | NOT_MOVED, QUEEN | WHITE | NOT_MOVED, KING | WHITE | NOT_MOVED, BISHOP | WHITE | NOT_MOVED, KNIGHT | WHITE | NOT_MOVED, ROOK | WHITE | NOT_MOVED
-// };
-int INITIAL_SETUP[] = {
-    84,82,83,85,86,83,0,84,81,81,81,81,0,81,81,81,0,0,0,0,0,0,0,105,0,0,0,0,0,0,0,114,0,0,0,0,0,0,0,105,0,105,0,0,0,0,0,0,0,0,106,73,73,73,73,110,113,0,0,76,74,75,77,0
+std::array<int, 64> INITIAL_SETUP = {
+    ROOK | BLACK | NOT_MOVED, KNIGHT | BLACK | NOT_MOVED, BISHOP | BLACK | NOT_MOVED, QUEEN | BLACK | NOT_MOVED, KING | BLACK | NOT_MOVED, BISHOP | BLACK | NOT_MOVED, KNIGHT | BLACK | NOT_MOVED, ROOK | BLACK | NOT_MOVED,
+    PAWN | BLACK | NOT_MOVED, PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,  PAWN | BLACK | NOT_MOVED, PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,
+    EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
+    EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
+    EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
+    EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
+    PAWN | WHITE | NOT_MOVED, PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,  PAWN | WHITE | NOT_MOVED, PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,
+    ROOK | WHITE | NOT_MOVED, KNIGHT | WHITE | NOT_MOVED, BISHOP | WHITE | NOT_MOVED, QUEEN | WHITE | NOT_MOVED, KING | WHITE | NOT_MOVED, BISHOP | WHITE | NOT_MOVED, KNIGHT | WHITE | NOT_MOVED, ROOK | WHITE | NOT_MOVED
 };
+// std::array<int, 64> INITIAL_SETUP = {
+//     84,82,83,85,86,83,0,84,81,81,81,81,0,81,81,81,0,0,0,0,0,0,0,105,0,0,0,0,0,0,0,114,0,0,0,0,0,0,0,105,0,105,0,0,0,0,0,0,0,0,106,73,73,73,73,110,113,0,0,76,74,75,77,0
+// };
 const unordered_map<int, string> PEICE_WORDS = {
     {EMPTY, "empty"},
     {PAWN | WHITE, "white pawn"},
@@ -217,4 +217,17 @@ unordered_map<int, vector<double>> SQUARE_COST = {
     {QUEEN | BLACK, blackQueenPositionValues},
     {KING | BLACK, blackKingPositionValues},
     {EMPTY, emptyPositionValues}
+};
+
+const int ROOK_DIRS[4][2] = {
+    {0, 1}, 
+    {0, -1}, 
+    {-1, 0}, 
+    {1, 0}
+};
+const int BISHOP_DIRS[4][2] = {
+    {1, 1}, 
+    {1, -1}, 
+    {-1, 1}, 
+    {-1, -1}
 };

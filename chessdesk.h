@@ -7,8 +7,7 @@
 #include <algorithm>
 #include <sstream>
 #include "constants.h"
-#include "Reader.h"
-#include "Writer.h"
+#include <set>
 
 using namespace std;
 
@@ -43,25 +42,38 @@ private:
 public:
     vector<State> history;
     int stepColor;
-    int desk[64];
+    std::array<int, 64> desk;
     unordered_map<int, vector<int>> piecePositions;
     ChessDesk() {
     };
-    ChessDesk(int* desk, int stepColor) {
-        memcpy(this->desk, desk, 64 * sizeof(int));
+    ChessDesk(std::array<int, 64> copy, int stepColor) {
+        this->desk = copy;
         this->stepColor = stepColor;
         this->updatePiecePositions();
     }
     ChessDesk(const ChessDesk& chessDesk) {
-        memcpy(this->desk, chessDesk.desk, 64 * sizeof(int));
+        this->desk = chessDesk.desk;
         this->history = chessDesk.history;
         stepColor = chessDesk.stepColor;
         this->updatePiecePositions();
     }
-    //deconstructor
-    // ~ChessDesk() {
-    //     delete[] desk;
-    // }
+    ChessDesk(ChessDesk&& chessDesk) noexcept {
+        this->desk = std::move(chessDesk.desk);
+        this->history = std::move(chessDesk.history);
+        stepColor = chessDesk.stepColor;
+        chessDesk.desk.fill(EMPTY);
+        chessDesk.history.clear();
+        chessDesk.stepColor = 0;
+        chessDesk.piecePositions.clear();
+    }
+    ChessDesk& operator=(const ChessDesk& other) {
+        if (this == &other) return *this; // Самоприсваивание
+        this->desk = other.desk;
+        this->history = other.history;
+        stepColor = other.stepColor;
+        this->updatePiecePositions();
+        return *this;
+    }
     ChessDesk(istringstream& data) {
         string str;
         int position = 0;
@@ -74,7 +86,7 @@ public:
         this->stepColor = static_cast<int>(std::stoi(str));
         this->updatePiecePositions();
     }
-    double status() const {
+    double status() {
         double status = 0;
         for (int i = 0; i < 64; i++) {
             int piece = this->desk[i];
@@ -106,9 +118,9 @@ public:
         state.stepColor = this->stepColor;
         history.push_back(state);
     }
-    void appendMoveToLastState(Turn turn) {
+    void appendMoveToLastState(Cage& fromCage, Cage& toCage) {
         State& state = history.back();
-        state.turns.push_back(turn);
+        state.turns.push_back({{fromCage.piece, fromCage.position}, {toCage.piece, toCage.position}});
     }
     void undo() {
         if (!history.empty()) {
@@ -134,18 +146,19 @@ public:
         }
     }
     bool move(int from, int to, bool hightPriority = false, bool newSave = true) {
+
         bool isWasKilled = false;
         
         Cage fromCage = getCage(from);
         Cage toCage = getCage(to);
-        isWasKilled = toCage.color != stepColor && toCage.piece != EMPTY;
+        
 
         if (newSave) {
             this->saveState({{fromCage.piece, fromCage.position}, {toCage.piece, toCage.position}});
         } else {
-            this->appendMoveToLastState({{fromCage.piece, fromCage.position}, {toCage.piece, toCage.position}});
+            this->appendMoveToLastState(fromCage, toCage);
         }
-
+        isWasKilled = toCage.piece != EMPTY;
         if (!hightPriority && (fromCage.color != stepColor)) {
             return isWasKilled;
         }
@@ -172,9 +185,10 @@ public:
         if (!hightPriority) {
             this->stepColor = (this->stepColor == WHITE) ? BLACK : WHITE;
         }
+
         return isWasKilled;
     }
-    Cage getCage(const int& position) {
+    Cage getCage(int position) {
         int piece = this->desk[position];
         return {
             position,
@@ -184,22 +198,23 @@ public:
             piece & MOVED_SHIFT
         };
     }
-    RowColumn getRowColumn(int& position) {
+    RowColumn getRowColumn(int position) {
         return {
-            static_cast<int>(position / 8),
-            static_cast<int>(position % 8)
+            position / 8,
+            position % 8
         };
     }
-    int getIndexByRowColumn(const int& row, const int& column) {
+    int getIndexByRowColumn(int row, int column) {
         if (column > 7 || row > 7 || row < 0 || column < 0) return -1;
         return row * 8 + column;
     }
 
     vector<int> getAllowCages(int pos, bool isCheck = true) {
-        Cage pieceObj = getCage(pos);
-        int type = pieceObj.type;
-        int color = pieceObj.color;
-        int isFirstMove = pieceObj.isFirstMove;
+
+        int pieceObj = this->desk[pos];
+        int type = pieceObj & TYPE_SHIFT;
+        int color = pieceObj & COLOR_SHIFT;
+        int isFirstMove = pieceObj & MOVED_SHIFT;
 
         RowColumn rowCol = getRowColumn(pos);
         int row = rowCol.row, col = rowCol.column;
@@ -209,7 +224,7 @@ public:
         int index, current_peice, current_color;
         int sign = color == BLACK ? 1 : -1;
 
-        switch (pieceObj.type) {
+        switch (type) {
             case PAWN:
                 index = this->getIndexByRowColumn(row + sign, col);
                 if ((this->desk[index] & TYPE_SHIFT) == EMPTY) {
@@ -268,14 +283,12 @@ public:
                 }
                 break;
         }
-
-        std::sort(result.begin(), result.end());
-        result.erase(std::unique(result.begin(), result.end()), result.end());
+        std::set<int> unique_elems(result.begin(), result.end());
+        result.assign(unique_elems.begin(), unique_elems.end());
 
         for (int i = 0; i < result.size(); i++) {
             int piece = this->desk[result[i]];
-            if ((result[i] == 255) ||
-                (result[i] == -1) ||
+            if ((result[i] == -1) ||
                 ((piece & TYPE_SHIFT) != EMPTY && (piece & COLOR_SHIFT) == color)
             ) {
                 result.erase(result.begin() + i);
@@ -300,9 +313,6 @@ public:
                 continue;
             }
             vector<int> moves = this->getAllowCages(i);
-            if (!moves.empty() && moves.back() == 255) {
-                continue;
-            }
             for (auto move : moves) {
                 result.push_back({i, move});
             }
@@ -433,87 +443,45 @@ public:
     }
     void getBishopAllowCages(int row, int col, int color, vector<int>& result)
     {
-        for (int i : {-1, 1})
-        {
-            for (int j : {-1, 1})
-            {
-                int currentRow = row + i;
-                int currentCol = col + j;
-                while (currentRow >= 0 && currentRow < 8 && currentCol >= 0 && currentCol < 8)
-                {
-                    int index = getIndexByRowColumn(currentRow, currentCol);
-                    if (index == -1)
-                        break;
-
-                    if ((desk[index] & TYPE_SHIFT) == EMPTY)
-                    {
-                        result.push_back(index);
-                    }
-                    else
-                    {
-                        if ((desk[index] & COLOR_SHIFT) != color)
-                        {
-                            result.push_back(index);
-                        }
-                        break;
-                    }
-                    currentRow += i;
-                    currentCol += j;
+// auto start = std::chrono::high_resolution_clock::now();
+        for (auto& dir : BISHOP_DIRS) {
+            for (int i = 1; i < 8; i++) {
+                const int index = getIndexByRowColumn(row + i * dir[0], col + i * dir[1]);
+                if (index == -1) {
+                    break;
                 }
+                int p = desk[index];
+                if ((p & TYPE_SHIFT) != EMPTY) {
+                    if ((p & COLOR_SHIFT) == color) {
+                        break;
+                    }
+                    result.push_back(index);
+                    break;
+                }
+                result.push_back(index);
             }
         }
+            // auto end = std::chrono::high_resolution_clock::now();
+            //     std::chrono::duration<double, std::milli> duration = end - start;
+            //     total_duration += duration;
     }
     void getRookAllowCages(int row, int col, int color, vector<int>& result)
     {
-        for (int i : {-1, 1})
-        {
-            int currentRow = row + i;
-            int currentCol = col;
-            while (currentRow >= 0 && currentRow < 8)
-            {
-                int index = getIndexByRowColumn(currentRow, currentCol);
-                if (index == -1)
+        for (auto& dir : ROOK_DIRS) {
+            for (int i = 1; i < 8; i++) {
+                const int index = getIndexByRowColumn(row + i * dir[0], col + i * dir[1]);
+                if (index == -1) {
                     break;
-
-                if ((desk[index] & TYPE_SHIFT) == EMPTY)
-                {
-                    result.push_back(index);
                 }
-                else
-                {
-                    if ((desk[index] & COLOR_SHIFT) != color)
-                    {
-                        result.push_back(index);
+                int p = desk[index];
+                if ((p & TYPE_SHIFT) != EMPTY) {
+                    if ((p & COLOR_SHIFT) == color) {
+                        break;
                     }
-                    break;
-                }
-                currentRow += i;
-            }
-        }
-
-        for (int j : {-1, 1})
-        {
-            int currentRow = row;
-            int currentCol = col + j;
-            while (currentCol >= 0 && currentCol < 8)
-            {
-                int index = getIndexByRowColumn(currentRow, currentCol);
-                if (index == -1)
-                    break;
-
-                if ((desk[index] & TYPE_SHIFT) == EMPTY)
-                {
                     result.push_back(index);
-                }
-                else
-                {
-                    if ((desk[index] & COLOR_SHIFT) != color)
-                    {
-                        result.push_back(index);
-                    }
                     break;
                 }
-                currentCol += j;
+                result.push_back(index);
             }
         }
     }
@@ -539,4 +507,15 @@ struct MoveForMinmax {
     MoveForMinmax(Move m, double s, ChessDesk d) : move(m), status(s), desk(d) {}
     MoveForMinmax() : move(Move()), status(0), desk(ChessDesk()) {}
     MoveForMinmax(Move m, double s) : move(m), status(s), desk(ChessDesk()) {}
+    MoveForMinmax(MoveForMinmax&& other) noexcept
+    : move(std::move(other.move)),
+      status(other.status),
+      desk(std::move(other.desk)) {}
+    MoveForMinmax& operator=(const MoveForMinmax& other) {
+        if (this == &other) return *this; // Самоприсваивание
+        move = other.move;
+        status = other.status;
+        desk = other.desk;
+        return *this;
+    }
 };

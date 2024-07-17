@@ -9,15 +9,14 @@
 
 using namespace std;
 
-int positionsCount = 0;
 
-double minmax(int depth, ChessDesk& chessDesk, double alpha, double beta, int color, bool prolongation = false) {
+double minmax(int depth, ChessDesk& chessDesk, double alpha, double beta, int color, bool prolongation = false, double calculatedStatus = 0) {
     positionsCount++;
     if ((depth < 0 && !prolongation) || depth < MAX_DEPTH*-1) {
-        return chessDesk.status();
+        return calculatedStatus;
     }
 
-    // auto start = std::chrono::high_resolution_clock::now();
+
 
     vector<Move> available_moves = chessDesk.getAllMoves(color);
     Move bestMoveFound;
@@ -31,9 +30,7 @@ double minmax(int depth, ChessDesk& chessDesk, double alpha, double beta, int co
         
 
     }
-            //             auto end = std::chrono::high_resolution_clock::now();
-            // std::chrono::duration<double, std::milli> duration = end - start;
-            // total_duration += duration;
+
     if (color == WHITE) {
         sort(moves.begin(), moves.end(), [](const MoveForMinmax& a, const MoveForMinmax& b) {
             return a.status > b.status;
@@ -51,7 +48,7 @@ double minmax(int depth, ChessDesk& chessDesk, double alpha, double beta, int co
     if (color == WHITE) {
         for (MoveForMinmax& move : moves) {
             bool isKilled = chessDesk.move(move.move.from, move.move.to);
-            double minmaxResult = minmax(depth - 1, chessDesk, alpha, beta, color == WHITE ? BLACK : WHITE, isKilled);
+            double minmaxResult = minmax(depth - 1, chessDesk, alpha, beta, color == WHITE ? BLACK : WHITE, isKilled, move.status);
             bestMove = max(bestMove, minmaxResult);
             chessDesk.undo();
 
@@ -62,7 +59,7 @@ double minmax(int depth, ChessDesk& chessDesk, double alpha, double beta, int co
     } else {
         for (MoveForMinmax& move : moves) {
             bool isKilled = chessDesk.move(move.move.from, move.move.to);
-            double minmaxResult = minmax(depth - 1, chessDesk, alpha, beta, color == WHITE ? BLACK : WHITE, isKilled);
+            double minmaxResult = minmax(depth - 1, chessDesk, alpha, beta, color == WHITE ? BLACK : WHITE, isKilled, move.status);
             bestMove = min(bestMove, minmaxResult);
             chessDesk.undo();
 
@@ -93,23 +90,15 @@ Move minmaxMain(ChessDesk& chessDesk, int color, int depth) {
         i++;
     }
     
-    if (color == WHITE) {
-        sort(moves.begin(), moves.end(), [](const MoveForMinmax& a, const MoveForMinmax& b) {
-            return a.status > b.status;
-        });
-    } 
-    else 
-    {
-        sort(moves.begin(), moves.end(), [](const MoveForMinmax& a, const MoveForMinmax& b) {
-            return a.status < b.status;
-        });
-    }
+    sort(moves.begin(), moves.end(), [color](const MoveForMinmax& a, const MoveForMinmax& b) {
+        return color == WHITE ? a.status > b.status : a.status < b.status;
+    });
     
     std::vector<std::thread> threads;
     
     for (MoveForMinmax& move : moves) {
         threads.emplace_back([&]() {
-            double value = minmax(depth, move.desk, -10000, 10000, color == WHITE ? BLACK : WHITE);
+            double value = minmax(depth, move.desk, -100000, 100000, color == WHITE ? BLACK : WHITE, false, move.status);
             if ((color == WHITE && value >= bestMove) || (color == BLACK && value <= bestMove)) {
                 bestMove = value;
                 bestMoveFound = move.move;
@@ -137,9 +126,6 @@ int main(int argc, char* argv[]) {
     // for (auto& thread : threads) {
     //     thread.join();
     // }
-    for (int i = 0; i < 64; ++i) {
-        cout << INITIAL_SETUP[i] << std::endl;
-    }
     ChessDesk mainChessDesk = ChessDesk(INITIAL_SETUP, WHITE);
     string input;
     while (true) {
@@ -203,6 +189,8 @@ int main(int argc, char* argv[]) {
             result += to_string(elapsed_ns.count() / 1000.);
             result += ", \"positionsCount\": ";
             result += to_string(positionsCount);
+            result += ", \"funcTime\": ";
+            result += to_string(total_duration.count() / 1000);
             result += "}";
             cout << result;
             

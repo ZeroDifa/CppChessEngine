@@ -60,6 +60,7 @@ public:
     ChessDesk(ChessDesk&& chessDesk) noexcept {
         this->desk = std::move(chessDesk.desk);
         this->history = std::move(chessDesk.history);
+        this->piecePositions = std::move(chessDesk.piecePositions);
         stepColor = chessDesk.stepColor;
         chessDesk.desk.fill(EMPTY);
         chessDesk.history.clear();
@@ -71,7 +72,7 @@ public:
         this->desk = other.desk;
         this->history = other.history;
         stepColor = other.stepColor;
-        this->updatePiecePositions();
+        this->piecePositions = other.piecePositions;
         return *this;
     }
     ChessDesk(istringstream& data) {
@@ -236,6 +237,8 @@ public:
                 }
                 for (int i : {-1, 1}) {
                     index = this->getIndexByRowColumn(row + sign, col + i);
+                    
+                    if (index == -1) continue;
                     current_color = this->desk[index];
                     if ((current_color & TYPE_SHIFT) != EMPTY && (current_color & COLOR_SHIFT) != color) {
                         result.push_back(index);
@@ -265,7 +268,8 @@ public:
                 result.push_back(getIndexByRowColumn(row, col-1));
                 result.push_back(getIndexByRowColumn(row, col+1));
 
-                current_peice = this->desk[this->getIndexByRowColumn(row, col+3)];
+                index = this->getIndexByRowColumn(row, col + 3);
+                current_peice = index == -1 ? EMPTY : this->desk[index];
                 if (
                     isFirstMove == NOT_MOVED && current_peice == ROOK|color|NOT_MOVED &&
                     this->desk[this->getIndexByRowColumn(row, col+1)] == EMPTY &&
@@ -273,7 +277,8 @@ public:
                 ) {
                     result.push_back(getIndexByRowColumn(row, col+2));
                 }
-                current_peice = this->desk[this->getIndexByRowColumn(row, col-4)];
+                index = this->getIndexByRowColumn(row, col - 4);
+                current_peice = index == -1 ? EMPTY : this->desk[index];
                 if (
                     isFirstMove == NOT_MOVED && current_peice == ROOK|color|NOT_MOVED &&
                     this->desk[this->getIndexByRowColumn(row, col-3)] == EMPTY &&

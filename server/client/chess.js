@@ -483,6 +483,7 @@ class Desk {
         let json = await response.json()
         this.loadDeskFromJson(json);
         writeToLog(json.time, json.positionsCount, json.funcTime);
+        last_move = [json.bestMove.from, json.bestMove.to]
 
     }
 }

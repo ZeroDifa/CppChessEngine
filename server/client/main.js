@@ -34,7 +34,11 @@ function render(ds) {
         drawRect('blue', i_want_pos[0] % 8 * px, Math.floor(i_want_pos[0] / 8) * px, px/2, ctx)
         drawRect('blue', i_want_pos[1] % 8 * px, Math.floor(i_want_pos[1] / 8) * px, px/2, ctx)
     }
-
+    if (last_move)
+    {
+        drawRect('orange', last_move[0] % 8 * px, Math.floor(last_move[0] / 8) * px, px/2, ctx)
+        drawRect('orange', last_move[1] % 8 * px, Math.floor(last_move[1] / 8) * px, px/2, ctx)
+    }
     if (!positionCount) {
         drawRect('green', ActiveX, ActiveY, px/2, ctx)
     } else {
@@ -69,7 +73,7 @@ function render(ds) {
 		ctx.globalAlpha = 1
 	}
 }
-
+let last_move = null;
 let DEPTH = parseInt(document.getElementsByTagName('select')[0].value);
 let MAX_DEPTH = parseInt(document.getElementsByTagName('select')[1].value)
 function selectUpdate()
@@ -91,20 +95,20 @@ let mousedown = async function (event) {
     console.log(GreenArcsArray)
     console.log(getPosition(event.offsetX, event.offsetY), PeiceOnFocus, GreenArcsArray, event.offsetX, event.offsetY)
 
-    canvas.onmousedown = (event2) => {
+    canvas.onmousedown = async (event2) => {
         if (!GreenArcsArray.includes(getPosition(event2.offsetX, event2.offsetY))) {
             GreenArcsArray = []
-            mousedown(event2);
+            await mousedown(event2);
             return
         }
         // MainDesk.move(positionFrom, getPosition(event2.offsetX, event2.offsetY), false, true)
-        MainDesk.fetchMove(positionFrom, getPosition(event2.offsetX, event2.offsetY), false, true)
+        await MainDesk.fetchMove(positionFrom, getPosition(event2.offsetX, event2.offsetY), false, true)
         GreenArcsArray = []
         PeiceOnFocus = -1;
 
 
         GreenArcsArray = []
-        // makeTurn(MainDesk, MainDesk.stepColor, DEPTH);
+        await MainDesk.fetchNextMove(DEPTH);
 
         canvas.onmousedown = mousedown
     }

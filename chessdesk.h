@@ -3,13 +3,18 @@
 #include <cstdint>
 #include <cmath>
 #include <vector>
-#include <unordered_map>
 #include <algorithm>
 #include <sstream>
+#include <array>
+#include <unordered_set>
+#include <unordered_map>
 #include "constants.h"
 #include <set>
+#include "SimpleJSON.h"
 
 using namespace std;
+
+
 
 // chess desk class
 class ChessDesk {
@@ -43,7 +48,7 @@ public:
     vector<State> history;
     int stepColor;
     std::array<int, 64> desk;
-    unordered_map<int, vector<int>> piecePositions;
+    std::unordered_map<int, vector<int>> piecePositions;
     ChessDesk() {
     };
     ChessDesk(std::array<int, 64> copy, int stepColor) {
@@ -99,8 +104,48 @@ public:
             status += DEFAULT_COST.at(piece & TYPE_SHIFT)*(color == WHITE ? 1. : -1.) + SQUARE_COST.at(pieceType | color)[i];
             // cout << SYMBOLS.at(pieceType | color) << " " << DEFAULT_COST.at(piece & TYPE_SHIFT)*(color == WHITE ? 1 : -1) + SQUARE_COST.at(pieceType | color)[i] << endl;
         }
+        // status += evaluatePawnStructure();
         
         return status;
+    }
+    double evaluatePawnStructure() {
+        double pawnStructureScore = 0.0;
+
+        // Example evaluation function for pawn structure
+        for (int color : { WHITE, BLACK }) {
+            int sign = color == WHITE ? 1 : -1;
+            vector<int> &positions = piecePositions[PAWN | color];
+            int pawnFile[8] = {0}; // File count for pawn support
+            for (int pos : positions) {
+                int file = pos % 8;
+                pawnFile[file]++;
+            }
+            for (int pos : positions) {
+                int file = pos % 8;
+                
+                // Checking isolated pawns
+                bool isIsolated = true;
+                if (file > 0 && pawnFile[file - 1] > 0) {
+                    isIsolated = false;
+                }
+                if (file < 7 && pawnFile[file + 1] > 0) {
+                    isIsolated = false;
+                }
+                if (isIsolated) {
+                    pawnStructureScore -= 3*sign; // Penalty for isolated pawns
+                }
+                
+                // Checking pawn pairs
+                if (file > 0 && pawnFile[file - 1] > 0) {
+                    pawnStructureScore += 1*sign; // Bonus for pawn pairs
+                }
+                if (file < 7 && pawnFile[file + 1] > 0) {
+                    pawnStructureScore += 1*sign; // Bonus for pawn pairs
+                }
+            }
+        }
+
+        return pawnStructureScore;
     }
     void printBoard() {
         // Reader reader(desk);
@@ -122,6 +167,12 @@ public:
     void appendMoveToLastState(Cage& fromCage, Cage& toCage) {
         State& state = history.back();
         state.turns.push_back({{fromCage.piece, fromCage.position}, {toCage.piece, toCage.position}});
+    }
+    void applyNullMove() {
+        State state;
+        state.stepColor = this->stepColor;
+        history.push_back(state);
+        this->stepColor = (this->stepColor == WHITE) ? BLACK : WHITE;
     }
     void undo() {
         if (!history.empty()) {
@@ -271,7 +322,7 @@ public:
                 index = this->getIndexByRowColumn(row, col + 3);
                 current_peice = index == -1 ? EMPTY : this->desk[index];
                 if (
-                    isFirstMove == NOT_MOVED && current_peice == ROOK|color|NOT_MOVED &&
+                    isFirstMove == NOT_MOVED && current_peice == (ROOK|color|NOT_MOVED) &&
                     this->desk[this->getIndexByRowColumn(row, col+1)] == EMPTY &&
                     this->desk[this->getIndexByRowColumn(row, col+2)] == EMPTY
                 ) {
@@ -280,7 +331,7 @@ public:
                 index = this->getIndexByRowColumn(row, col - 4);
                 current_peice = index == -1 ? EMPTY : this->desk[index];
                 if (
-                    isFirstMove == NOT_MOVED && current_peice == ROOK|color|NOT_MOVED &&
+                    isFirstMove == NOT_MOVED && current_peice == (ROOK|color|NOT_MOVED) &&
                     this->desk[this->getIndexByRowColumn(row, col-3)] == EMPTY &&
                     this->desk[this->getIndexByRowColumn(row, col-1)] == EMPTY
                 ) {
@@ -293,7 +344,7 @@ public:
 
         for (int i = 0; i < result.size(); i++) {
             int piece = this->desk[result[i]];
-            if ((result[i] == -1) ||
+            if ((result[i] == -1) || piece & TYPE_SHIFT == KING ||
                 ((piece & TYPE_SHIFT) != EMPTY && (piece & COLOR_SHIFT) == color)
             ) {
                 result.erase(result.begin() + i);
@@ -490,18 +541,18 @@ public:
             }
         }
     }
-    string toJson() const {
-        string result = "{\"desk\":[";
+    string toJson() {
+        JSONValue::JSONObject result;
+        JSONValue::JSONArray desk;
         for (int i = 0; i < 64; i++)
         {
-            result += to_string((desk[i]));
-            if (i!= 63)
-                result += ",";
+            desk.push_back(JSONValue(this->desk[i]));
         }
-        result += "],\"stepColor\": ";
-        result += to_string(this->stepColor);
-        result += "}";
-        return result;
+        result["desk"] = JSONValue(desk);
+        result["stepColor"] = JSONValue(this->stepColor);
+        result["status"] = JSONValue(this->status());
+        result["type"] = JSONValue("get-current");
+        return JSONParser::stringify(result);
     }
 };
 
@@ -509,18 +560,26 @@ struct MoveForMinmax {
     Move move;
     double status;
     ChessDesk desk;
+    bool isCheck = false;
+    bool isKill = false;
+    MoveForMinmax(Move m, double s, ChessDesk d, bool ic, bool ik) : move(m), status(s), desk(d), isCheck(ic), isKill(ik) {}
+    MoveForMinmax(Move m, double s, bool ic, bool ik) : move(m), status(s), isCheck(ic), isKill(ik) {}
     MoveForMinmax(Move m, double s, ChessDesk d) : move(m), status(s), desk(d) {}
     MoveForMinmax() : move(Move()), status(0), desk(ChessDesk()) {}
     MoveForMinmax(Move m, double s) : move(m), status(s), desk(ChessDesk()) {}
     MoveForMinmax(MoveForMinmax&& other) noexcept
     : move(std::move(other.move)),
       status(other.status),
-      desk(std::move(other.desk)) {}
+      desk(std::move(other.desk)),
+      isCheck(other.isCheck),
+      isKill(other.isKill) {}
     MoveForMinmax& operator=(const MoveForMinmax& other) {
         if (this == &other) return *this; // Самоприсваивание
         move = other.move;
         status = other.status;
         desk = other.desk;
+        isCheck = other.isCheck;
+        isKill = other.isKill;
         return *this;
     }
 };

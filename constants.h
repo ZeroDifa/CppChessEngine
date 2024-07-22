@@ -1,16 +1,23 @@
-#pragma once;
+#pragma once
 
 #include <cstdint>
-#include <unordered_map>
 #include <string>
 #include <array>
 #include <vector>
 #include <algorithm>
 #include <numeric>
 
+#include "configflagmanager.h"
+#include "robin_hood.h"
+
 using namespace std;
+
+JSONValue::JSONObject stats = JSONValue::JSONObject();
+
 static std::chrono::duration<double, std::milli> total_duration(0);
 static int positionsCount = 0;
+
+
 const int EMPTY = 0;
 const int PAWN = 1;
 const int BISHOP = 3;
@@ -28,9 +35,11 @@ const int TYPE_SHIFT = 7;
 const int COLOR_SHIFT = 24;
 const int MOVED_SHIFT = 96;
 
+const int TRANSPOSITION_TABLE_MAX_SIZE = 30000000;
+
 int MAX_DEPTH = 4;
 
-const unordered_map<int, string> SYMBOLS = {
+const robin_hood::unordered_map<int, string> SYMBOLS = {
     {EMPTY, " "},
     {PAWN | WHITE, "♙"},
     {KNIGHT | WHITE, "♘"},
@@ -55,10 +64,15 @@ std::array<int, 64> INITIAL_SETUP = {
     PAWN | WHITE | NOT_MOVED, PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,  PAWN | WHITE | NOT_MOVED, PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,
     ROOK | WHITE | NOT_MOVED, KNIGHT | WHITE | NOT_MOVED, BISHOP | WHITE | NOT_MOVED, QUEEN | WHITE | NOT_MOVED, KING | WHITE | NOT_MOVED, BISHOP | WHITE | NOT_MOVED, KNIGHT | WHITE | NOT_MOVED, ROOK | WHITE | NOT_MOVED
 };
+
 // std::array<int, 64> INITIAL_SETUP = {
-//     84,82,83,85,86,83,0,84,81,81,81,81,0,81,81,81,0,0,0,0,0,0,0,105,0,0,0,0,0,0,0,114,0,0,0,0,0,0,0,105,0,105,0,0,0,0,0,0,0,0,106,73,73,73,73,110,113,0,0,76,74,75,77,0
+//     0,0,0,0,108,0,0,0,0,0,0,0,0,81,0,118,0,0,0,0,0,0,0,113,113,0,0,0,0,0,0,0,0,0,113,113,0,0,0,116,105,0,114,0,0,0,0,117,0,0,73,0,0,73,0,0,0,0,0,0,0,0,110,0
+
 // };
-const unordered_map<int, string> PEICE_WORDS = {
+// std::array<int, 64> INITIAL_SETUP = {
+// 0,0,0,0,0,0,118,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,105,0,0,113,0,0,0,105,0,0,0,0,113,0,0,0,0,113,109,0,0,115,0,0,117,110,0,0,0,0,0,0,0,108,0,0,0,0,0
+// };
+const robin_hood::unordered_map<int, string> PEICE_WORDS = {
     {EMPTY, "empty"},
     {PAWN | WHITE, "white pawn"},
     {KNIGHT | WHITE, "white knight"},
@@ -78,12 +92,13 @@ const unordered_map<int, string> PEICE_WORDS = {
 struct Move {
     int from;
     int to;
+    int pieceChoice;
     Move(int f, int t) : from(f), to(t) {}
     Move() : from(0), to(0) {}
 };
 
 
-const unordered_map<int, double> DEFAULT_COST = {
+const robin_hood::unordered_map<int, double> DEFAULT_COST = {
     {KING, 900.},
     {QUEEN, 90.},
     {ROOK, 50.},
@@ -203,7 +218,7 @@ const vector<double> emptyPositionValues = {
     0., 0, 0, 0, 0, 0, 0, 0,
     0., 0, 0, 0, 0, 0, 0, 0
 };
-unordered_map<int, vector<double>> SQUARE_COST = {
+robin_hood::unordered_map<int, vector<double>> SQUARE_COST = {
     {PAWN | WHITE, unpackArray(whitePawnPositionValues)},
     {KNIGHT | WHITE, unpackArray(whiteKnightPositionValues)},
     {BISHOP | WHITE, unpackArray(whiteBishopPositionValues)},

@@ -57,18 +57,18 @@ const INITIAL_SETUP = [
 // ]
 
 let Images = {
-    [BISHOP + '-' + BLACK]: 'img/eb.png',  // 1 = ПЕШКА 2 = КОНЬ. 3 = СЛОН. 4 = ЛАДЬЯ. 5 = ФЕРЗЬ. 6 = КОРОЛЬ
-    [BISHOP + '-' + WHITE]: 'img/ew.png',
-    [PAWN + '-' + BLACK]: 'img/pb.png',
-    [PAWN + '-' + WHITE]: 'img/pw.png',
-    [KNIGHT + '-' + BLACK]: 'img/hb.png',
-    [KNIGHT + '-' + WHITE]: 'img/hw.png',
-    [KING + '-' + BLACK]: 'img/kb.png',
-    [KING + '-' + WHITE]: 'img/kw.png',
-    [QUEEN + '-' + BLACK]: 'img/qb.png',
-    [QUEEN + '-' + WHITE]: 'img/qw.png',
-    [ROOK + '-' + BLACK]: 'img/rb.png',
-    [ROOK + '-' + WHITE]: 'img/rw.png',
+    [BISHOP + '-' + BLACK]: 'img/eb.svg',  // 1 = ПЕШКА 2 = КОНЬ. 3 = СЛОН. 4 = ЛАДЬЯ. 5 = ФЕРЗЬ. 6 = КОРОЛЬ
+    [BISHOP + '-' + WHITE]: 'img/ew.svg',
+    [PAWN + '-' + BLACK]: 'img/pb.svg',
+    [PAWN + '-' + WHITE]: 'img/pw.svg',
+    [KNIGHT + '-' + BLACK]: 'img/hb.svg',
+    [KNIGHT + '-' + WHITE]: 'img/hw.svg',
+    [KING + '-' + BLACK]: 'img/kb.svg',
+    [KING + '-' + WHITE]: 'img/kw.svg',
+    [QUEEN + '-' + BLACK]: 'img/qb.svg',
+    [QUEEN + '-' + WHITE]: 'img/qw.svg',
+    [ROOK + '-' + BLACK]: 'img/rb.svg',
+    [ROOK + '-' + WHITE]: 'img/rw.svg',
     'stop': 'img/stop.png',
     'checkblack': 'img/checkblack.png',
     'checkwhite': 'img/checkwhite.png'

@@ -17,7 +17,7 @@ body {
     /* position: absolute; */
     margin: 10px;
 	font-size: large;
-	width: 200px; /* Ширина div */
+	max-width: 400px; /* Ширина div */
 	max-height: 600px; /* Высота div */
 	overflow: auto; /* Включаем прокрутку */
 	border: 1px solid #ccc; /* Граница для наглядности */

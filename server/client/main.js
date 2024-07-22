@@ -1,6 +1,7 @@
 let a = Math.min(window.innerWidth, window.innerHeight) * 0.8;
 console.log(window.innerWidth, window.innerHeight, a);
 let px = a / 8;
+let frameRate = 1;
 //CANVAS
 let canvas = document.getElementById('canvas');
 window.ctx = canvas.getContext('2d');
@@ -11,8 +12,11 @@ window.onresize = (e) => {
     px = a / 8;
     canvas.width = a;
     canvas.height = a;
+    render(MainDesk)
 }
 
+let Objects = [];
+let notifys = {};
 // fetch to localhost
 
 let l = console.log;
@@ -23,8 +27,7 @@ let BotColor = (PlayerColor === WHITE) ? BLACK : WHITE
 l(PlayerColor)
 
 // let MainDesk = new CheckersDesk();
-let MainDesk = new Desk();
-MainDesk.fetchCurrent();
+let MainDesk = new Desk(null, true);
 
 function render(ds) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -87,31 +90,34 @@ function getPosition(x, y) {
 }
 
 let PeiceOnFocus = -1, GreenArcsArray = [];
-let mousedown = async function (event) {
+let mousedown = function (event) {
     let positionFrom = PeiceOnFocus = getPosition(event.offsetX, event.offsetY) ;
     PeiceOnFocus = MainDesk.getPiece(PeiceOnFocus);
     // GreenArcsArray = MainDesk.get_all_moves(MainDesk.stepColor)[getPosition(event.offsetX, event.offsetY)] ?? [];
-    GreenArcsArray = await MainDesk.fetchGetAllMoves(PeiceOnFocus.position);
-    console.log(GreenArcsArray)
-    console.log(getPosition(event.offsetX, event.offsetY), PeiceOnFocus, GreenArcsArray, event.offsetX, event.offsetY)
+    MainDesk.fetchGetAllMoves(PeiceOnFocus.position);
 
     canvas.onmousedown = async (event2) => {
         if (!GreenArcsArray.includes(getPosition(event2.offsetX, event2.offsetY))) {
             GreenArcsArray = []
-            await mousedown(event2);
+            mousedown(event2);
+            // render(MainDesk)
             return
         }
         // MainDesk.move(positionFrom, getPosition(event2.offsetX, event2.offsetY), false, true)
-        await MainDesk.fetchMove(positionFrom, getPosition(event2.offsetX, event2.offsetY), false, true)
+        MainDesk.fetchMove(positionFrom, getPosition(event2.offsetX, event2.offsetY), false, true)
         GreenArcsArray = []
         PeiceOnFocus = -1;
 
 
         GreenArcsArray = []
-        await MainDesk.fetchNextMove(DEPTH);
+        if (document.getElementById('automove').checked)
+        {
+            MainDesk.fetchNextMove(DEPTH);
+        }
 
         canvas.onmousedown = mousedown
     }
+    // render(MainDesk)
 }
 canvas.onmousedown = mousedown
 // COMPUTER
@@ -122,6 +128,16 @@ let AlreadySolvedCount = 0;
 let i_want_pos = null;
 var minimax = async function (depth, game, alpha, beta, color, prolongationDepth = false) {
     positionCount++;
+    const R = 2; // Reduction factor for null move
+    if (depth >= R && !prolongationDepth) {
+        let nullGame = new Desk(game.copy())    ;
+        let nullMoveResult = await minimax(depth - 1 - R, nullGame, -beta, -beta + 1, color === WHITE ? BLACK : WHITE);
+        nullMoveResult = -nullMoveResult;
+
+        if (nullMoveResult >= beta) {
+            return beta; // Fail-high cutoff
+        }
+    }
     if ((depth < 0 && !prolongationDepth) || depth < MAX_DEPTH*-1) {
         return game.status;
     }
@@ -208,7 +224,6 @@ let minimaxMain = async function(game, color, depth) {
     let moveStatusesSet = {};
     for (let i = 0; i < moves.length; i++) {
         const move = moves[i];
-        let hash = await crc32()
         var value = await minimax(depth, move.desk, -10000, 10000, color === WHITE ? BLACK : WHITE);
 
         if (color === WHITE && value >= bestMove) {
@@ -231,7 +246,7 @@ async function makeTurn(desk, color, depth, cycle = false) {
     let bestMove = await minimaxMain(desk, color, depth);
     await desk.fetchMove(bestMove[0], bestMove[1])
     let time = ((performance.now()-t)/1000).toFixed(3);
-    writeToLog(time, positionCount, timeToFunc)
+    writeToLog({time, positionCount, timeToFunc})
     timeToFunc = 0
     positionCount = 0;
     i_want_pos = null;
@@ -239,18 +254,27 @@ async function makeTurn(desk, color, depth, cycle = false) {
 
     // if (cycle) makeTurn(MainDesk, MainDesk.stepColor, depth, cycle)
 }
-function writeToLog(time, positions, func)
+function writeToLog(object = {})
 {
     document.getElementById("AdminInfo").innerHTML = `
-        <br>Speed: ${(positions/time).toFixed(0)}/s
-        <br>Total ${positions} (${time} с)
-        <br>Func time ${func}(${(func/time*100).toFixed(2)}) с
-        <br>------------------
+        ${JSON.stringify(object, null, 2).trim().replace(/\n/g, '<br>').replace(/[\{\}\"\,]/g, '')}
+        ------------------
     ` + document.getElementById("AdminInfo").innerHTML;
 }
-setInterval(() => {
+// setInterval(() => {
+//     render(MainDesk)
+// }, 1000/frameRate)
+
+function main() {
     render(MainDesk)
-}, 1000/60)
+    for (let obj of Objects) {
+        obj.move()
+        obj.draw()
+    }
+    requestAnimationFrame(main)
+}
+main()
+
 // OTHER
 function rnd(arr) {
     arr[0] = Math.ceil(arr[0]);
@@ -259,8 +283,6 @@ function rnd(arr) {
 }
 function draw_circle(fillCircle, x, y, mass, ctx) {
     ctx.beginPath();
-    ctx.shadowColor = fillCircle
-    ctx.shadowBlur = 40
     ctx.fillStyle = fillCircle;
     ctx.strokeStyle = fillCircle;
     ctx.arc(x, y, mass, 0, Math.PI * 2);
@@ -273,8 +295,6 @@ function draw_circle(fillCircle, x, y, mass, ctx) {
 
 function drawRect(fillCircle, x, y, mass, ctx) {
     ctx.beginPath();
-    ctx.shadowColor = fillCircle
-	ctx.shadowBlur = 40
     ctx.fillStyle = fillCircle;
     ctx.strokeStyle = fillCircle;
     ctx.rect(x, y, px, px);
@@ -293,4 +313,137 @@ async function crc32(message) {
 }
 function updateProgressBar(p){
     document.getElementById('progressbar').style.height = (a*p) + 'px'
+}
+
+function updatePartySelect(list) {
+    let select = document.getElementById('partyList');
+    select.innerHTML = '';
+    for (let party of list) {
+        let option = document.createElement('option');
+        if (party === MainDesk.uuid) option.selected = true;
+        option.value = party;
+        option.innerHTML = party;
+        select.appendChild(option);
+    }
+}
+
+function joinParty()
+{
+    let party = document.getElementById('partyList').value;
+    MainDesk.msg({
+        type: 'joinParty',
+        uuid: party,
+    });
+}
+
+function createParty() {
+    MainDesk.msg({
+        type: 'createParty'
+    });
+}
+function deleteParty() {
+    MainDesk.msg({
+        type: 'deleteParty'
+    })
+}
+
+function prettyFormatDouble(number) { // 1221222.13123 -> 1 221 222
+    return parseInt(number).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+
+class Vanish {
+    constructor(object, step = 0.02, hit = function () { }) {
+        this.hit = hit;
+        this.step = step;
+        Objects.push(this);
+        this.object = object;
+        this.alpha = 1;
+        this.dateCreate = performance.now();
+    }
+    draw() {
+        ctx.globalAlpha = this.alpha;
+        this.object.draw();
+        ctx.globalAlpha = 1;
+    }
+    move() {
+        this.alpha -= this.step
+        if (this.alpha < 0 || performance.now() - this.dateCreate > 10000) {
+            delFromArray(Objects, this)
+            this.hit();
+            return;
+        }
+    }
+}
+class PushNotify {
+    static notifyCount = 0;
+    static nid = 0;
+    constructor(message, duration = 1000, color = 'orange') {
+        this.duration = duration;
+        this.color = color
+        this.repos()
+        this.dateCreate = performance.now();
+        this.text = message;
+        Objects.push(this)
+        this.nid = PushNotify.nid++
+        notifys[this.nid] = (this)
+        this.isStart = true
+        this.yk = PushNotify.notifyCount++;
+    }
+    repos() {
+        this.mass = 20;
+        this.width = 200;
+        this.height = 100;
+        this.rangeyto = this.height / 2 + 10 * this.yk + this.height * this.yk
+        this.x = 100
+        if (this.isStart) {
+            this.rangey = this.height / 2 + 10 * this.yk + this.height * this.yk + 100 * this.yk
+            this.isStart = false
+        } else {
+            this.rangey += (this.rangeyto - this.rangey) * 0.15
+            if (this.rangey < 0 || this.rangey === NaN) {
+                this.rangey = this.height / 2 + 10 * this.yk + this.height * this.yk;
+            }
+        }
+        this.y = 0 + this.rangey
+
+    }
+    move() {
+        if (performance.now() - this.dateCreate > this.duration) {
+            PushNotify.notifyCount--;
+            delFromArray(Objects, this);
+            new Vanish(this, 0.07, () => {
+                for (let i in notifys) {
+                    let el = notifys[i];
+                    if (el.yk > 0 && this.yk < el.yk) el.yk -= 1;
+                }
+                delete notifys[this.nid]
+            })
+        }
+    }
+    draw() {
+        this.repos()
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        ctx.strokeStyle = 'red';
+        ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+        draw_text(this.x, this.y, this.text, this.mass);
+        ctx.stroke();
+    }
+}
+
+function draw_text(x, y, name, mass, align = 'center', base = 'middle') {
+    ctx.beginPath();
+    ctx.font = mass + 'px Ubuntu';
+    ctx.fillStyle = 'Black';
+    ctx.strokeStyle = 'black';
+    ctx.textAlign = align;
+    ctx.textBaseline = base;
+    if (typeof name == "number") name = Math.floor(name).toString();
+    ctx.fillText(name, x, y);
+    ctx.stroke();
+}
+function delFromArray(array, element) {
+    let i = array.indexOf(element);
+    if (i !== -1) { array.splice(i, 1) }
 }

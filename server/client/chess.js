@@ -1,5 +1,5 @@
 class Desk {
-    constructor(buffer = null) {
+    constructor(buffer = null, createSocket = false) {
         if (buffer !== null) this.board = buffer;
         else {
             this.board = new ArrayBuffer(64*PIECE_BYTE_SIZE);
@@ -10,7 +10,75 @@ class Desk {
         this.lastTurn = []
         this.saves = [];
         this.piecePositions = {};
+        this.movesToAnimate = [];
+        this.serverDeskStatus = null;
         this.updatePeopleThinkingDesk();
+        if (createSocket) {
+            this.ws = new WebSocket('ws://localhost:1337');
+            this.ws.onmessage = this.onmessage.bind(this);
+        }
+        this.uuid = null;
+    }
+    onmessage(event) {
+
+        let data;
+        try {
+            data = JSON.parse(event.data);
+        } catch (e) {
+            new PushNotify(event.data, 10000, 'red')
+            return
+        }
+        if (data.type === 'new') {
+            this.loadDeskFromJson(data);
+        }
+        console.log(data)
+        switch (data.type) {
+            case 'partyInit':
+                this.uuid = data.uuid;
+                this.fetchCurrent();
+                updatePartySelect(data.partyList);
+                break;
+            case 'get-current':
+                this.addMoveToAnimate(data.move);
+                this.loadDeskFromJson(data);
+                this.serverDeskStatus = data.status;
+                break;
+            case 'do':
+                let counter = data.counter;
+                writeToLog({
+                    TotalTim: data.time,
+                    stats: data.stats
+                });
+                last_move = [data.move.from, data.move.to]
+                i_want_pos = null;
+                this.addMoveToAnimate(data.move);
+                this.loadDeskFromJson(data);
+                this.serverDeskStatus = data.status;
+                break;
+            case 'partyList':
+                updatePartySelect(data.data);
+                break;
+            case 'wantPos':
+                i_want_pos = data.move;
+                break;
+            case 'get-allow-moves':
+                GreenArcsArray = data.moves;
+                break
+        }
+    }
+    addMoveToAnimate(move) {
+        if (move === undefined) return;
+        this.movesToAnimate.push({
+            from: move.from,
+            to: move.to,
+            x: (move.from % 8) * px,
+            y: Math.floor(move.from / 8) * px,
+            xTo: (move.to % 8) * px,
+            yTo: Math.floor(move.to / 8) * px,
+            pieceFrom: Object.assign(this.array[move.from], {}),
+            pieceTo: Object.assign(this.array[move.to], {})
+        })
+        frameRate = 120;
     }
     fillBoard(SETUP = INITIAL_SETUP)
     {
@@ -93,17 +161,39 @@ class Desk {
             drawRect('orange', x, y, px, ctx)
         }
         ctx.globalAlpha = 1
+        let skipPositions = []
+        for (let move of this.movesToAnimate) {
+            skipPositions.push(move.to)
+        }
         for (let i = 0; i < 8; i++) {
             for (let j = 0; j < 8; j++) {
                 let piece = reader.readUint8();
                 let color = reader.readUint8();
                 reader.position++;
-                if (!piece) continue
-                ctx.shadowBlur = 30
-                ctx.shadowColor = color === BLACK ? 'black' : '#555'
+                if (!piece || skipPositions.includes(this.getIndex(i, j))) continue
                 ctx.drawImage(Images[piece + '-' + color], j * px, i * px, px, px)
 
             }
+        }
+        for (let move of this.movesToAnimate) {
+            move.x += (move.xTo - move.x) * 0.16;
+            move.y += (move.yTo - move.y) * 0.16;
+            let piece = move.pieceFrom
+            ctx.drawImage(Images[piece.type + '-' + piece.color], move.x, move.y, px, px)
+            let distance = Math.sqrt((move.x - move.xTo) ** 2 + (move.y - move.yTo) ** 2)
+            if (distance < 1) {
+                this.movesToAnimate.splice(this.movesToAnimate.indexOf(move), 1)
+                frameRate = 1;
+            }
+        }
+        if (this.serverDeskStatus !== null)
+        {
+            // ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+            // ctx.fillRect(0, 0, 8*px, 8*px)
+            ctx.fillStyle = 'white'
+            ctx.font = '20px Arial'
+            ctx.fillText(this.serverDeskStatus, 8*px-50, 8*px/2)
+
         }
     }
     getIndex(row, col) {
@@ -287,7 +377,7 @@ class Desk {
     getPlayerAllMoves(color)
     {
         let result = [];
-        let pieces = this.piecePositions[PAWN|color];
+        let pieces = this.piecePositions[PAWN|color] ?? [];
         let sign = color === WHITE ? -1 : 1;
         for (const piece of pieces) {
             result.push(piece+8*sign);
@@ -455,35 +545,41 @@ class Desk {
         }
         return m
     }
-
-    async fetchCurrent() {
-        let response = await fetch('http://localhost:8080/command?input=get-current');
-        this.loadDeskFromJson(await response.json());
+    msg(message) {
+        this.ws.send(JSON.stringify(message));
+    }
+    fetchCurrent() {
+        this.msg({
+            uuid: this.uuid,
+            data: 'get-current'
+        })
     }
     async fetchUndo()
     {
-        let response = await fetch('http://localhost:8080/command?input=undo');
-        this.loadDeskFromJson(await response.json());
+
+        this.msg({
+            uuid: this.uuid,
+            data: 'undo'
+        });
     }
 
-    async fetchGetAllMoves(pos)
+    fetchGetAllMoves(pos)
     {
-        let response = await fetch(`http://localhost:8080/command?input=get-allow-moves ${MainDesk.toString()}${this.stepColor} ${pos}`);
-        let text = await response.text();
-        if (text.length === 0)
-            return [];
-        return (text).split(' ').map(Number);
+        this.msg({
+            uuid: this.uuid,
+            data: 'get-allow-moves ' + pos
+        })
     }
-    async fetchMove(from, to) {
-        let response = await fetch(`http://localhost:8080/command?input=move ${from} ${to}`);
-        this.loadDeskFromJson(await response.json());
+    fetchMove(from, to) {
+        this.msg({
+            uuid: this.uuid,
+            data: 'move ' + from + ' ' + to
+        });
     }
-    async fetchNextMove() {
-        let response = await fetch('http://localhost:8080/command?input=do ' + DEPTH + ' ' + MAX_DEPTH);
-        let json = await response.json()
-        this.loadDeskFromJson(json);
-        writeToLog(json.time, json.positionsCount, json.funcTime);
-        last_move = [json.bestMove.from, json.bestMove.to]
-
+    fetchNextMove() {
+        this.msg({
+            uuid: this.uuid,
+            data: 'do ' + DEPTH + ' ' + MAX_DEPTH
+        });
     }
 }

@@ -23,17 +23,52 @@ body {
 	border: 1px solid #ccc; /* Граница для наглядности */
 	padding: 10px; /* Отступ внутри div */
 }
-.button {
-	text-align: center;
-	padding: 10px;
-}
-input {
-	width: 15px;
-}
-select {
-	font-size: 0.9rem;
-	padding: 2px 5px;
-}
+
 #actions {
-	/*display: flex;*/
+	background-color: #2c3e50;
+	padding: 20px;
+	border-radius: 10px;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	color: #ecf0f1;
+	max-width: 400px;
+	max-height: 500px;
+	overflow-y: auto;
+}
+
+#actions .button {
+	background-color: #3498db;
+	border: none;
+	color: white;
+	padding: 10px 20px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	font-size: 16px;
+	margin: 4px 2px;
+	border-radius: 5px;
+	cursor: pointer;
+	transition: background-color 0.3s;
+}
+
+#actions .button:hover {
+	background-color: #2980b9;
+}
+
+#actions select {
+	background-color: #34495e;
+	border: none;
+	color: white;
+	padding: 10px;
+	border-radius: 5px;
+	margin: 4px 2px;
+	font-size: 16px;
+	width: 100px;
+}
+
+#actions input[type="checkbox"] {
+	margin-left: 10px;
+}
+
+#actions span {
+	margin-left: 10px;
 }

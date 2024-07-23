@@ -8,7 +8,7 @@ window.ctx = canvas.getContext('2d');
 canvas.width = a;
 canvas.height = a;
 window.onresize = (e) => {
-    a = Math.min(window.innerWidth, window.innerHeight) * 0.8
+    a = Math.min(window.innerWidth, window.innerHeight)
     px = a / 8;
     canvas.width = a;
     canvas.height = a;

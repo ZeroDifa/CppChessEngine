@@ -63,6 +63,9 @@
         "set": "cpp",
         "condition_variable": "cpp",
         "mutex": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "unordered_set": "cpp",
+        "list": "cpp",
+        "queue": "cpp"
     }
 }

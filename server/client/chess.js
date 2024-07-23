@@ -172,7 +172,12 @@ class Desk {
                 reader.position++;
                 if (!piece || skipPositions.includes(this.getIndex(i, j))) continue
                 ctx.drawImage(Images[piece + '-' + color], j * px, i * px, px, px)
-
+                if (document.getElementById('show-indexes').checked)
+                {
+                    ctx.fillStyle = 'black'
+                    ctx.font = '15px Arial'
+                    ctx.fillText(i*8+j, j*px, i*px+15)
+                }
             }
         }
         for (let move of this.movesToAnimate) {

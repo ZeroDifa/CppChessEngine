@@ -20,6 +20,8 @@
 #include "thearpool.h"
 #include "configflagmanager.h"
 
+#include "robin_hood.h"
+
 using namespace std;
 
 ZobristHash zobristHash;
@@ -42,7 +44,7 @@ double minmax(int depth, ChessDesk& chessDesk, double alpha, double beta, int co
     const int R = 2;
     if (depth >= R && !prolongation && !chessDesk.isCheck(color)) {
         ChessDesk tempchessDesk = ChessDesk(chessDesk);
-        double nullMoveValue = -minmax(depth - 1 - R, tempchessDesk, -beta, -beta + 1, color == WHITE ? BLACK : WHITE, false, calculatedStatus);
+        double nullMoveValue = -minmax(depth - 1 - R, tempchessDesk, -beta, -beta + 1, color, false, calculatedStatus);
         if (nullMoveValue >= beta) 
             return nullMoveValue;
     }
@@ -220,16 +222,16 @@ Move minmaxMain(ChessDesk& chessDesk, int color, int depth, double alpha, double
     std::vector<std::future<void>> futures;
 
     for (MoveForMinmax& move : moves) {
-        futures.emplace_back(pool.enqueue([&] {
-            if (checkmateFound.load()) {
-                return; // Если мат найден, выходим раньше
-            }
+        // futures.emplace_back(pool.enqueue([&] {
+        //     if (checkmateFound.load()) {
+        //         return; // Если мат найден, выходим раньше
+        //     }
             double value = minmax(depth, move.desk, alpha, beta, color == WHITE ? BLACK : WHITE, false, move.status);
             {
                 std::lock_guard<std::mutex> lock(mtx);
-                if (checkmateFound.load()) {
-                    return;
-                }
+                // if (checkmateFound.load()) {
+                //     return;
+                // }
                 if ((color == WHITE && value >= bestMove) || (color == BLACK && value <= bestMove)) {
                     if (abs(value) == 10000 && color == (value > 0 ? WHITE : BLACK))
                         checkmateFound.store(true);
@@ -246,12 +248,12 @@ Move minmaxMain(ChessDesk& chessDesk, int color, int depth, double alpha, double
                     cout << JSONParser::stringify(iWant) << endl;
                 }
             }
-        }));
+        // }));
     }
 
-    for (auto& future : futures) {
-        future.get();
-    }
+    // for (auto& future : futures) {
+    //     future.get();
+    // }
     
     if (bestMoveFound.from == 0 && bestMoveFound.to == 0) {
         throw std::runtime_error("Best move not found");
@@ -299,7 +301,7 @@ Move iterativeDeepening(ChessDesk& chessDesk, int color, int maxDepth, int timeL
     return bestMove;
 }
 int main(int argc, char* argv[]) {
-    ChessDesk mainChessDesk = ChessDesk(INITIAL_SETUP, WHITE);
+    ChessDesk mainChessDesk = ChessDesk(INITIAL_SETUP, INIT_COLOR);
     
     for (int i = 0; i < argc; i++) {
         CONFIG.set(string(argv[i]));
@@ -313,6 +315,17 @@ int main(int argc, char* argv[]) {
         iss >> command;
         if (command == "exit") {
             break;
+        } else if (command == "pretty-piece-positions")
+        {
+            const robin_hood::unordered_map<int, vector<int>>& piecePositions = mainChessDesk.piecePositions;
+            for (auto& piece : piecePositions) {
+                if (piece.second.size() == 0 || piece.first == EMPTY) continue;
+                cout << SYMBOLS.at(static_cast<int>(piece.first)) << ": ";
+                for (auto& position : piece.second) {
+                    cout << static_cast<int>(position) << " ";
+                }
+                cout << std::endl;
+            }
         } else if (command == "get-allow-moves") {
             iss >> buffer;
             vector<int> moves = mainChessDesk.getAllowCages(atoi(buffer.c_str()));

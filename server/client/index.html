@@ -12,59 +12,58 @@
 	<script type="text/javascript" src="main.js" defer></script>
 		<div class="main">
 			<canvas id="canvas"></canvas>
-			<div id="progressbar" style="background-color: green; transition: background-color ease-in;">s s</div>
 			<div id="AdminInfo"></div>
+			<div id="actions">
+	<!--			<button class="button" onclick="MainDesk.undo(); render(MainDesk)">Undo</button>-->
+				<button class="button" onclick="MainDesk.fetchUndo(); render(MainDesk)">Undo</button>
+				<select size="4" name="hero" oninput="selectUpdate()">
+					<option value="1">1</option>
+					<option value="2" selected>2</option>
+					<option value="3">3</option>
+					<option value="4">4</option>
+					<option value="5">5</option>
+					<option value="6">6</option>
+					<option value="7">7</option>
+					<option value="8">8</option>
+					<option value="9">9</option>
+					<option value="10">10</option>
+					<option value="11">11</option>
+					<option value="12">12</option>
+					<option value="13">13</option>
+					<option value="14">14</option>
+					<option value="15">15</option>
+				</select>
+				<select size="4" name="hero" oninput="selectUpdate()">
+					<option value="0">0</option>
+					<option value="1">1</option>
+					<option value="2" selected>2</option>
+					<option value="3">3</option>
+					<option value="4">4</option>
+					<option value="5">5</option>
+					<option value="6">6</option>
+					<option value="7">7</option>
+					<option value="8">8</option>
+
+					<option value="9">9</option>
+					<option value="10">10</option>
+					<option value="11">11</option>
+					<option value="12">12</option>
+					<option value="13">13</option>
+					<option value="14">14</option>
+					<option value="15">15</option>
+				</select>
+				<button class="button" onclick="MainDesk.saveDeskToLocalStorage()">Save</button>
+				<button class="button" onclick="MainDesk.loadDeskFromLocalStorage()">load</button>
+				<button class="button" onclick="makeTurn(MainDesk, MainDesk.stepColor, DEPTH)">Turn (local)</button>
+				<button class="button" onclick="MainDesk.fetchNextMove(DEPTH);">Turn</button>
+				<select	size="4" name="partyList" id="partyList" oninput="joinParty()"></select>
+				<button class="button" onclick="createParty()">Create party</button>
+				<button class="button" onclick="deleteParty()">Delete party</button>
+				<span style="color: white">Автозапуск хода</span><input type="checkbox" id="automove" name="automove" value="automove" >
+				<span style="color: white">Показывать индексы</span><input type="checkbox" id="show-indexes" name="automove" value="automove" >
+			</div>
 		</div>
 
-		<div id="actions">
-<!--			<button class="button" onclick="MainDesk.undo(); render(MainDesk)">Undo</button>-->
-			<button class="button" onclick="MainDesk.fetchUndo(); render(MainDesk)">Undo</button>
-			<select size="4" name="hero" oninput="selectUpdate()">
-				<option value="1">1</option>
-				<option value="2" selected>2</option>
-				<option value="3">3</option>
-				<option value="4">4</option>
-				<option value="5">5</option>
-				<option value="6">6</option>
-				<option value="7">7</option>
-				<option value="8">8</option>
-				<option value="9">9</option>
-				<option value="10">10</option>
-				<option value="11">11</option>
-				<option value="12">12</option>
-				<option value="13">13</option>
-				<option value="14">14</option>
-				<option value="15">15</option>
-			</select>
-			<select size="4" name="hero" oninput="selectUpdate()">
-				<option value="0">0</option>
-				<option value="1">1</option>
-				<option value="2" selected>2</option>
-				<option value="3">3</option>
-				<option value="4">4</option>
-				<option value="5">5</option>
-				<option value="6">6</option>
-				<option value="7">7</option>
-				<option value="8">8</option>
-
-				<option value="9">9</option>
-				<option value="10">10</option>
-				<option value="11">11</option>
-				<option value="12">12</option>
-				<option value="13">13</option>
-				<option value="14">14</option>
-				<option value="15">15</option>
-			</select>
-			<button class="button" onclick="MainDesk.saveDeskToLocalStorage()">Save</button>
-			<button class="button" onclick="MainDesk.loadDeskFromLocalStorage()">load</button>
-			<button class="button" onclick="makeTurn(MainDesk, MainDesk.stepColor, DEPTH)">Turn (local)</button>
-			<button class="button" onclick="MainDesk.fetchNextMove(DEPTH);">Turn</button>
-			<span style="color: white">Автозапуск хода</span><input type="checkbox" id="automove" name="automove" value="automove" >
-			// partieslist
-			<select	size="4" name="partyList" id="partyList" oninput="joinParty()"></select>
-			<button class="button" onclick="createParty()">Create party</button>
-			<button class="button" onclick="deleteParty()">Delete party</button>
-		</div>
 	</body>
 
 </html>

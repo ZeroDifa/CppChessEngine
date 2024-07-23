@@ -6,11 +6,10 @@
 #include <algorithm>
 #include <sstream>
 #include <array>
-#include <unordered_set>
-#include <unordered_map>
 #include "constants.h"
 #include <set>
 #include "SimpleJSON.h"
+#include "robin_hood.h"
 
 using namespace std;
 
@@ -48,7 +47,7 @@ public:
     vector<State> history;
     int stepColor;
     std::array<int, 64> desk;
-    std::unordered_map<int, vector<int>> piecePositions;
+    robin_hood::unordered_map<int, vector<int>> piecePositions;
     ChessDesk() {
     };
     ChessDesk(std::array<int, 64> copy, int stepColor) {
@@ -94,17 +93,17 @@ public:
     }
     double status() {
         double status = 0;
-        for (int i = 0; i < 64; i++) {
-            int piece = this->desk[i];
-            int pieceType = piece & TYPE_SHIFT;
-            int color = piece & COLOR_SHIFT;
-            if (piece == EMPTY) {
+        for (const auto& entry : piecePositions) {
+            if (entry.second.empty() || entry.first == EMPTY) {
                 continue;
             }
-            status += DEFAULT_COST.at(piece & TYPE_SHIFT)*(color == WHITE ? 1. : -1.) + SQUARE_COST.at(pieceType | color)[i];
-            // cout << SYMBOLS.at(pieceType | color) << " " << DEFAULT_COST.at(piece & TYPE_SHIFT)*(color == WHITE ? 1 : -1) + SQUARE_COST.at(pieceType | color)[i] << endl;
+            int pieceType = entry.first & TYPE_SHIFT;
+            int pieceColor = entry.first & COLOR_SHIFT;
+            for (int i : entry.second) {
+                status += DEFAULT_COST.at(pieceType)*(pieceColor == WHITE ? 1. : -1.) + SQUARE_COST.at(entry.first)[i];
+            }
         }
-        // status += evaluatePawnStructure();
+        status += evaluatePawnStructure();
         
         return status;
     }
@@ -210,9 +209,10 @@ public:
         } else {
             this->appendMoveToLastState(fromCage, toCage);
         }
+        // isWasKilled = toCage.piece != EMPTY && (fromCage.color != stepColor);
         isWasKilled = toCage.piece != EMPTY;
         if (!hightPriority && (fromCage.color != stepColor)) {
-            return isWasKilled;
+            throw std::invalid_argument("It's not your turn");
         }
 
 
@@ -339,7 +339,7 @@ public:
                 }
                 break;
         }
-        std::set<int> unique_elems(result.begin(), result.end());
+        robin_hood::unordered_set<int> unique_elems(result.begin(), result.end());
         result.assign(unique_elems.begin(), unique_elems.end());
 
         for (int i = 0; i < result.size(); i++) {

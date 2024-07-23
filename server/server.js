@@ -39,15 +39,19 @@ function createParty(args = {}  )
     })
     return uuid;
 }
-    function calculatorOutput(uuid, data) {
-    try {
-        JSON.parse(data);
-        calculatorsToConnections[uuid].forEach(ws => {
-            ws.send(data);
-        });
-    } catch (e) {
-        return false;
-    }
+function calculatorOutput(uuid, data) {
+    // try {
+    //     JSON.parse(data);
+    //     calculatorsToConnections[uuid].forEach(ws => {
+    //         ws.send(data);
+    //     });
+    // } catch (e) {
+    //     return false;
+    // }
+
+    calculatorsToConnections[uuid].forEach(ws => {
+        ws.send(data);
+    });
 }
 // консольный eval
 process.stdin.on('data', (data) => {

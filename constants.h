@@ -54,24 +54,25 @@ const robin_hood::unordered_map<int, string> SYMBOLS = {
     {QUEEN | BLACK, "♛"},
     {KING | BLACK, "♚"}
 };
-std::array<int, 64> INITIAL_SETUP = {
-    ROOK | BLACK | NOT_MOVED, KNIGHT | BLACK | NOT_MOVED, BISHOP | BLACK | NOT_MOVED, QUEEN | BLACK | NOT_MOVED, KING | BLACK | NOT_MOVED, BISHOP | BLACK | NOT_MOVED, KNIGHT | BLACK | NOT_MOVED, ROOK | BLACK | NOT_MOVED,
-    PAWN | BLACK | NOT_MOVED, PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,  PAWN | BLACK | NOT_MOVED, PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,
-    EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
-    EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
-    EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
-    EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
-    PAWN | WHITE | NOT_MOVED, PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,  PAWN | WHITE | NOT_MOVED, PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,
-    ROOK | WHITE | NOT_MOVED, KNIGHT | WHITE | NOT_MOVED, BISHOP | WHITE | NOT_MOVED, QUEEN | WHITE | NOT_MOVED, KING | WHITE | NOT_MOVED, BISHOP | WHITE | NOT_MOVED, KNIGHT | WHITE | NOT_MOVED, ROOK | WHITE | NOT_MOVED
-};
+// std::array<int, 64> INITIAL_SETUP = {
+//     ROOK | BLACK | NOT_MOVED, KNIGHT | BLACK | NOT_MOVED, BISHOP | BLACK | NOT_MOVED, QUEEN | BLACK | NOT_MOVED, KING | BLACK | NOT_MOVED, BISHOP | BLACK | NOT_MOVED, KNIGHT | BLACK | NOT_MOVED, ROOK | BLACK | NOT_MOVED,
+//     PAWN | BLACK | NOT_MOVED, PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,  PAWN | BLACK | NOT_MOVED, PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,   PAWN | BLACK | NOT_MOVED,
+//     EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
+//     EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
+//     EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
+//     EMPTY,        EMPTY,          EMPTY,          EMPTY,         EMPTY,        EMPTY,          EMPTY,          EMPTY,
+//     PAWN | WHITE | NOT_MOVED, PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,  PAWN | WHITE | NOT_MOVED, PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,   PAWN | WHITE | NOT_MOVED,
+//     ROOK | WHITE | NOT_MOVED, KNIGHT | WHITE | NOT_MOVED, BISHOP | WHITE | NOT_MOVED, QUEEN | WHITE | NOT_MOVED, KING | WHITE | NOT_MOVED, BISHOP | WHITE | NOT_MOVED, KNIGHT | WHITE | NOT_MOVED, ROOK | WHITE | NOT_MOVED
+// };
 
 // std::array<int, 64> INITIAL_SETUP = {
 //     0,0,0,0,108,0,0,0,0,0,0,0,0,81,0,118,0,0,0,0,0,0,0,113,113,0,0,0,0,0,0,0,0,0,113,113,0,0,0,116,105,0,114,0,0,0,0,117,0,0,73,0,0,73,0,0,0,0,0,0,0,0,110,0
 
 // };
-// std::array<int, 64> INITIAL_SETUP = {
-// 0,0,0,0,0,0,118,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,105,0,0,113,0,0,0,105,0,0,0,0,113,0,0,0,0,113,109,0,0,115,0,0,117,110,0,0,0,0,0,0,0,108,0,0,0,0,0
-// };
+std::array<int, 64> INITIAL_SETUP = {
+    84,0,0,0,86,83,0,84,81,81,81,0,81,81,81,81,0,0,114,0,0,114,0,0,0,106,0,0,0,0,0,0,0,117,0,105,0,0,115,0,0,0,0,0,105,0,0,0,73,73,0,107,0,73,73,73,76,0,0,77,78,75,74,76
+};
+const int INIT_COLOR = WHITE;
 const robin_hood::unordered_map<int, string> PEICE_WORDS = {
     {EMPTY, "empty"},
     {PAWN | WHITE, "white pawn"},

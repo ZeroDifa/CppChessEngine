@@ -2,6 +2,11 @@ const { spawn } = require('child_process');
 const express = require('express');
 const WebSocket = require('ws');
 const {response} = require("express");
+const { log } = require('console');
+//env_config from parent folder
+
+require('dotenv').config({path: '../.env'});
+
 
 const app = express();
 
@@ -11,10 +16,10 @@ app.listen(8080, () => {
     console.log('Press Ctrl+C to stop the server');
 });
 const wss = new WebSocket.Server({port: 1337});
+log('Server started');
 
 const calculators = {};
 const calculatorsToConnections = {};
-
 createParty({uuid: 'First'});
 createParty({uuid: '-o2', path: '../main_o2.exe'});
 createParty({uuid: 'no_sort', path: '../main.exe', options: ['--no_sort']});
@@ -48,7 +53,11 @@ function calculatorOutput(uuid, data) {
     // } catch (e) {
     //     return false;
     // }
-
+    // if data has }{ then split it
+    if (data.includes('}{'))
+    {
+        return
+    }
     calculatorsToConnections[uuid].forEach(ws => {
         ws.send(data);
     });
@@ -133,5 +142,4 @@ wss.on('connection', (ws, req) => {
     ws.on('close', () => {
         leaveWsFromParty(ws)
     });
-
 });
